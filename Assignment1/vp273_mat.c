@@ -35,7 +35,7 @@ int main( int argc, char *argv[] )
     	for ( int s = 1 ; s <= n / 2 ; s = 2 * s )
     	{
     		clock_gettime( CLOCK_MONOTONIC , &start );
-    		for ( int j = 0 ; j < REPEAT ; j++ )
+    		for ( int j = 0 ; j < REPEAT * s ; j++ )
     		{
     			for ( int i ; i <= (int)( n / s ) ; i++ )
 	    		{
@@ -44,8 +44,8 @@ int main( int argc, char *argv[] )
     		}
     		clock_gettime( CLOCK_MONOTONIC , &end );
     		diff = ( BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec ) ;
-			printf( "elapsed time = %lf nanoseconds for STRIDE= %d and LENGTH= %d\n", ( double ) diff * s / ( n * REPEAT) , s , n);
-            fprintf( ptr_file ,"%d , %lf\n", s ,  ( double ) diff * s / ( n * REPEAT ) );
+			printf( "elapsed time = %lf nanoseconds for STRIDE= %d and LENGTH= %d\n", ( double ) diff / ( n * REPEAT) , s , n);
+            fprintf( ptr_file ,"%d , %lf\n", s ,  ( double ) diff / ( n * REPEAT ) );
     	}
     }   
     free ( A ) ;
