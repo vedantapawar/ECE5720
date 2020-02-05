@@ -52,7 +52,7 @@ int main( int argc, char *argv[] )
     		for ( int j = 0 ; j < REPEAT * s ; j++ )
     		{
                 // Access("touch") the array n / s times
-    			for ( int i ; i <= (int)( n / s ) ; i++ )
+    			for ( int i = 0 ; i <= (int)( n / s ) ; i++ )
 	    		{
 	    			A[ i * s ] = 3.142857 ; // Touch the array element by storing pi
 	    		}
