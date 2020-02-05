@@ -9,15 +9,15 @@ Compile: gcc vp273_mat.c -std=gnu99 -o vp273_mat
 Run: ./vp273_mat
 */
 
-#include <stdio.h>
-#include <stdint.h>	
-#include <stdlib.h>
-#include <time.h>
+#include <stdio.h> 	// For printf() 
+#include <stdint.h>	// For uint64
+#include <stdlib.h> // For exit(0)
+#include <time.h>   // For clock_gettime()
 
 #define MAX_LENGTH 1048576  // MAX_LENGTH is 2^20
 #define STRIDE 1            // Stride length 
 #define MIN_SIZE 1024       // MIN_LENGTH is 2^10
-#define BILLION 1000000000L // To convert clock time in floating point seconds to nano seconds
+#define BILLION 1000000000L // To convert clock time in floating point seconds to nanoseconds
 #define REPEAT 10           // For averaging out the result over 10 trials
 
 int main( int argc, char *argv[] )
