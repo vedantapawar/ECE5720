@@ -30,7 +30,6 @@ float p ;
 STRUCT_ARGS str_args ;
 pthread_mutex_t mutexsum ; 
 
-
 void* gaussian_elimination ( void* arg )
 {
 	STRUCT_ARGS *str_args;
@@ -41,18 +40,18 @@ void* gaussian_elimination ( void* arg )
 	int veclen = str_args -> veclen ;
 	int i = str_args -> i ;
 	int j = str_args -> j ;
-	int start = str_args -> thr_id * veclen ;
-	int thr_id = str_args -> thr_id ;
+	long thr_id = str_args -> thr_id ;
+	int start = thr_id * veclen ;
 
-	for ( int k = i + veclen * thr_id ; k < i + veclen  * ( thr_id + 1 ); k++ )
+	for ( int k = i + veclen * thr_id ; k < i + veclen  * ( thr_id + 1 ) ; k++ )
 	{
 		*( matA + j * ndim + k ) -= str_args -> p * ( *( matA + i * ndim + k ) ) ;
 	}
-	pthread_exit((void*) 0);
+	pthread_exit( (void * ) (long)thr_id  );
 }
 
 void* back_substitution ( void* arg)
-{
+{	
 	STRUCT_ARGS *str_args;
 	str_args = ( STRUCT_ARGS * ) arg ;
 	int ndim = str_args -> ndim ;
@@ -63,12 +62,10 @@ void* back_substitution ( void* arg)
 	int start = str_args -> thr_id * veclen ;
 	int thr_id = str_args -> thr_id ;
 	float x = str_args -> p;
-
 	for ( int k = thr_id * veclen ; k < ( thr_id + 1 ) * veclen , k <= i ; k++ )
 	{
 		*( matB + k ) -= x * ( *( matA + k * ndim + i ) ) ; 
 	}
-	
 	pthread_exit(NULL);
 }
 
@@ -79,6 +76,8 @@ int main( int argc, char *argv[] )
 	int ndim ;					// Ask user and store the dimension of the square matrix
 	int num;
 	float p , x;
+	int rc , attr_st;
+    void *status;
 
 	printf( "Enter the dimension of the matrix:\n" );
 	scanf("%d" , &ndim); 	// Store matrix dimension in ndim 
@@ -118,12 +117,6 @@ int main( int argc, char *argv[] )
 		// *( matB + i ) = num ;	
 	}
 
-	pthread_t tids[ NUM_THREADS ];
-	pthread_attr_t attr;
-	// pthread_mutex_init(&mutexsum, NULL);	
-	pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
 	// Start high resolution clock timer
 	clock_gettime( CLOCK_MONOTONIC , &start );
 
@@ -131,79 +124,77 @@ int main( int argc, char *argv[] )
 	{
 		for ( int j = i + 1 ; j < ndim ; j++ )
 		{
-			printf("%d here , %d\n" , i , j);
 			if ( * ( matA + i * ndim + i ) == 0 )
 			{
 				break ;
 			}
 			p = * ( matA + j * ndim + i ) / * ( matA + i * ndim + i ) ;
+			pthread_t tids[ NUM_THREADS ];
+			pthread_attr_t attr;	
+			pthread_attr_init(&attr);
+    		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 			for (int id = 0; id < NUM_THREADS; id++) 
 			{
 				str_args . thr_id = id ;
 				str_args . i = i ;
 				str_args . j = j ;
 				str_args . p = p ;
-				pthread_attr_init( &attr );
-				pthread_create( &tids[i] , &attr , gaussian_elimination , ( void* ) &str_args );
+				pthread_create( &tids[id] , &attr , gaussian_elimination , ( void* ) &str_args );
 			}
-			pthread_attr_destroy(&attr);
-			for (int i = 0; i < NUM_THREADS; i++) 
+
+			for (int id = 0; id < NUM_THREADS; id++) 
 			{
-				pthread_join(tids[i], NULL);
+				rc = pthread_join(tids[id], &status);
+				if (rc) 
+				{
+					printf("ERROR; return code from pthread_join() is %d and id is %d \n", rc , id);
+					exit(-1);
+				}
 			}
 			*( matB + j ) -= p * ( *( matB + i ) ) ;
 		}
 	}
 	
-	// pthread_t tids[ NUM_THREADS ];
-	// pthread_attr_t attr;
-	pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
+	
 	for ( int i = ndim - 1 ; i >= 0 ; i-- )
 	{
 		if ( * (matA + i * ndim + i) == 0 )
 		{
-			printf( "No Solution Exists");
-			exit( 1 ) ;
+			printf( "No Solution Exists" ) ;
+			exit( -1 ) ;
 		}
+
 		x = *( matB + i ) / * (matA + i * ndim + i) ;
 		printf ( "Answer: %f \n" , x ) ; 
+		pthread_t tids[ NUM_THREADS ];
+		pthread_attr_t attr;	
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
 		for (int id = 0; id < NUM_THREADS; id++) 
 		{
 			str_args . thr_id = id ;
 			str_args . i = i ;
 			str_args . p = x ;
-			pthread_attr_init( &attr );
-			pthread_create( &tids[i] , &attr , back_substitution , ( void* ) &str_args );
+			// pthread_attr_init( &attr );
+			pthread_create( &tids[id] , &attr , back_substitution , ( void* ) &str_args );
 		}
 		pthread_attr_destroy(&attr);
-		for (int i = 0; i < NUM_THREADS; i++) 
+		for (int id = 0; id < NUM_THREADS; id++) 
 		{
-			pthread_join(tids[i], NULL);
+			pthread_join(tids[id], NULL);
 		}
 		
-	}
+	}	
 	
 	clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
 	//Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
 	diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
 	printf( "elapsed time = %llu nanoseconds\n", ( long long unsigned int ) diff );
 
-	// for ( int i = 0 ; i < ndim ; i++ )
-	// 	{
-	// 		// Iterate through the columns of the Matrix A 
-	// 		for ( int j = 0 ; j < ndim ; j++ )
-	// 		{
-	// 			printf ( "%f \n" , *( matA + i * ndim + j ) ) ;
-	// 		}	
-	// 		printf ( "%f \n" , *( matB + i ) ) ;
-	// 	}
-
-
 	//Deallocate the memory allocated to matrices A, B and C
 	free ( matA ) ;
 	free ( matB ) ;
-	// pthread_exit(NULL);
+	pthread_exit(NULL);
 	exit( 0 ) ;
 }

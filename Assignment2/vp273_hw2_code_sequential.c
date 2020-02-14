@@ -46,15 +46,17 @@ int main( int argc, char *argv[] )
 			srand48( clock() ) ; // Set random seed to for initializing drand48() later
 			// Store same random numbers in A 
 			*( matA + i * ndim + j ) = drand48() ;		
-			scanf( "%d" , &num )	;
-			*( matA + i * ndim + j ) = num ;		
+			// scanf( "%d" , &num )	;
+			// *( matA + i * ndim + j ) = num ;		
 		}
 		srand48 ( clock() ) ;
-		// *( matB + i ) = drand48() ;	
-		scanf( "%d" , &num )	;
-		*( matB + i ) = num ;	
+		*( matB + i ) = drand48() ;	
+		// scanf( "%d" , &num )	;
+		// *( matB + i ) = num ;	
 	}
-
+	
+	// Start high resolution clock timer
+	clock_gettime( CLOCK_MONOTONIC , &start );
 	for ( int i = 0 ; i < ndim - 1 ; i++ )
 	{
 		for ( int j = i + 1 ; j < ndim ; j++ )
@@ -80,25 +82,22 @@ int main( int argc, char *argv[] )
 			break ;
 		}
 		x = *( matB + i ) / * (matA + i * ndim + i) ;
-		printf ( "Answer: %f \n" , x ) ; 
+		// printf ( "Answer: %f \n" , x ) ; 
 		for ( int k = 0 ; k <= i ; k++ )
 		{
 			*( matB + k ) -= x * ( *( matA + k * ndim + i ) ) ; 
 		}
 	} 
 
-	for ( int i = 0 ; i < ndim ; i++ )
-	{
-		// Iterate through the columns of the Matrix A 
-		for ( int j = 0 ; j < ndim ; j++ )
-		{
-			printf ( "%f \n" , *( matA + i * ndim + j ) ) ;
-		}
-		printf ( "%f \n" , *( matB + i ) ) ;
-	}
-
-    // Start high resolution clock timer
-	clock_gettime( CLOCK_MONOTONIC , &start );
+	// for ( int i = 0 ; i < ndim ; i++ )
+	// {
+	// 	// Iterate through the columns of the Matrix A 
+	// 	for ( int j = 0 ; j < ndim ; j++ )
+	// 	{
+	// 		printf ( "%f \n" , *( matA + i * ndim + j ) ) ;
+	// 	}
+	// 	printf ( "%f \n" , *( matB + i ) ) ;
+	// }
 
 	clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
 	//Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
