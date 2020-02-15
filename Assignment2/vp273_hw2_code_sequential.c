@@ -12,6 +12,7 @@ Run: ./vp273_hw2_code
 #include <stdint.h>	// For uint64
 #include <stdlib.h> // For srand48() and drand48()
 #include <time.h>   // For clock_gettime()
+#include <math.h>
 
 #define BILLION 1000000000L	  // To convert clock time in floating point seconds to nanoseconds/
 
@@ -21,10 +22,9 @@ int main( int argc, char *argv[] )
 	struct timespec start, end; // Used to implement the high resolution timer included in <time.h>
 	int ndim ;					// Ask user and store the dimension of the square matrix
 	float sum = 0.0;			// Intermediate sum of the innerproduct of the row vector and column vector
-	float p;
-	int num;
-	float x ;
-
+	int num ;
+	double p;
+	double rho = 0.0 ;
 	printf( "Enter the dimension of the matrix:\n" );
 	scanf("%d" , &ndim); 	// Store matrix dimension in ndim 	
 
@@ -36,7 +36,9 @@ int main( int argc, char *argv[] )
 	 */
 	double *matA = ( double * )malloc( ndim * ndim * sizeof( double ) ) ;
 	double *matB = ( double * )malloc( ndim * sizeof( double ) ) ;
-	 
+	double *matA_check = ( double * )malloc( ndim * ndim * sizeof( double ) ) ;
+	double *matB_check = ( double * )malloc( ndim * sizeof( double ) ) ;
+	double* x = ( double * )malloc( ndim * sizeof( double ) ) ;
 	// Iterate through the rows of the Matrix A 
 	for ( int i = 0 ; i < ndim ; i++ )
 	{
@@ -47,12 +49,15 @@ int main( int argc, char *argv[] )
 			// Store same random numbers in A 
 			*( matA + i * ndim + j ) = drand48() ;		
 			// scanf( "%d" , &num )	;
-			// *( matA + i * ndim + j ) = num ;		
+			// *( matA + i * ndim + j ) = num ;	
+			*( matA_check + i * ndim + j ) = *( matA + i * ndim + j ) ;
+	
 		}
 		srand48 ( clock() ) ;
 		*( matB + i ) = drand48() ;	
 		// scanf( "%d" , &num )	;
 		// *( matB + i ) = num ;	
+		* ( matB_check + i ) = *( matB + i ) = num ;
 	}
 	
 	// Start high resolution clock timer
@@ -81,31 +86,46 @@ int main( int argc, char *argv[] )
 			printf( "No Solution Exists");
 			break ;
 		}
-		x = *( matB + i ) / * (matA + i * ndim + i) ;
+		*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
 		// printf ( "Answer: %f \n" , x ) ; 
 		for ( int k = 0 ; k <= i ; k++ )
 		{
-			*( matB + k ) -= x * ( *( matA + k * ndim + i ) ) ; 
+			*( matB + k ) -= *( x + i ) * ( *( matA + k * ndim + i ) ) ; 
 		}
 	} 
-
-	// for ( int i = 0 ; i < ndim ; i++ )
-	// {
-	// 	// Iterate through the columns of the Matrix A 
-	// 	for ( int j = 0 ; j < ndim ; j++ )
-	// 	{
-	// 		printf ( "%f \n" , *( matA + i * ndim + j ) ) ;
-	// 	}
-	// 	printf ( "%f \n" , *( matB + i ) ) ;
-	// }
 
 	clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
 	//Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
 	diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
 	printf( "elapsed time = %llu nanoseconds\n", ( long long unsigned int ) diff );
 
+	// for (int i = 0; i < ndim; i++)
+	// {
+	// 	printf("%lf\n", *(x+i));
+	// }
+	
+	printf ( "___________Numerical Verification___________\n" ) ;
+	for ( int i = 0 ; i < ndim ; i++ )
+	{
+		sum = 0.0 ;
+		for ( int j = 0 ; j < ndim ; j++ )
+		{
+			sum += *( matA_check + i * ndim + j ) * ( *( x + j ) ) ;
+			// printf("%lf , %lf \n" , *( matA_check + i * ndim + j ) , ( *( x + j )) );
+		}
+		// printf("%lf 	, %lf \n" , sum , *(matB_check + i ) );
+		rho += pow ( ( sum - *(matB_check + i ) ) , 2 )  ;
+	}
+
+	rho = sqrt ( rho ) ;
+	printf ( "The error is %lf\n" , rho ) ;
+
+
 	//Deallocate the memory allocated to matrices A, B and C
 	free ( matA ) ;
 	free ( matB ) ;
+	free ( matA_check ) ;
+	free ( matB_check ) ;
+	free ( x ) ;
 	exit( 0 ) ;
 }
