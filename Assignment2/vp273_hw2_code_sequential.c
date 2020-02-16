@@ -16,12 +16,31 @@ Run: ./vp273_hw2_code
 
 #define BILLION 1000000000L	  // To convert clock time in floating point seconds to nanoseconds/
 
+/*
+void find_max ( double *matA , int i , int ndim ) 
+{
+	int i_max = i + 1 ; // For storing max i
+	double max = *( matA + i * ndim + i ) ;
+	for ( int j = i + 1 ; j < ndim ; j++ )
+	{
+		if ( max < *( matA + j * ndim + i ) )
+		{
+			max = *( matA + j * ndim + i ) ;
+			i_max = j ;
+		}
+	}
+	double *temp ;
+	temp = matA + i * ndim ;
+	matA + i * ndim = matA + i_max ;
+
+}*/
+
 int main( int argc, char *argv[] )
 {
 	uint64_t diff; 				// Stores the time in nanoseconds
 	struct timespec start, end; // Used to implement the high resolution timer included in <time.h>
 	int ndim ;					// Ask user and store the dimension of the square matrix
-	float sum = 0.0;			// Intermediate sum of the innerproduct of the row vector and column vector
+	double sum = 0.0;			// Intermediate sum of the innerproduct of the row vector and column vector
 	int num ;
 	double p;
 	double rho = 0.0 ;
@@ -64,6 +83,7 @@ int main( int argc, char *argv[] )
 	clock_gettime( CLOCK_MONOTONIC , &start );
 	for ( int i = 0 ; i < ndim - 1 ; i++ )
 	{
+		// find_max ( matA , i , ndim ) ;
 		for ( int j = i + 1 ; j < ndim ; j++ )
 		{
 			if ( * ( matA + i * ndim + i ) == 0 )
