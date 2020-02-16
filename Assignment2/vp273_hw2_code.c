@@ -28,8 +28,7 @@ int veclen ;
 int i , j , thr_id;
 float p ;
 }  ;
-struct STRUCT_ARGS str_args[2] ;
-pthread_mutex_t mutexsum ; 
+
 
 void* gaussian_elimination ( void* arg )
 {
@@ -43,7 +42,7 @@ void* gaussian_elimination ( void* arg )
 	int j = str_args -> j ;
 	long thr_id = str_args -> thr_id ;
 
-	for ( int k = i + veclen * thr_id ; k < i + veclen  * ( thr_id + 1 ) ; k++ )
+	for ( int k = i + veclen * thr_id ; k < i + veclen  * ( thr_id + 1 ) && k < ndim ; k++ )
 	{
 		// printf("%lf , %lf , i=%d , j=%d , k=%d , tid=%ld\n" , *( matA + j * ndim + k ) , *( matA + i * ndim + k ) , 
 		// i , j , k ,thr_id );
@@ -63,8 +62,8 @@ void* back_substitution ( void* arg)
 	int i = str_args -> i ;
 	int start = str_args -> thr_id * veclen ;
 	int thr_id = str_args -> thr_id ;
-	float x = str_args -> p;
-	for ( int k = thr_id * veclen ; k < ( thr_id + 1 ) * veclen , k <= i ; k++ )
+	double x = str_args -> p;
+	for ( int k = thr_id * veclen ; k < ( thr_id + 1 ) * veclen && k <= i ; k++ )
 	{
 		*( matB + k ) -= x * ( *( matA + k * ndim + i ) ) ; 
 	}
@@ -99,7 +98,8 @@ int main( int argc, char *argv[] )
 	double *matA_check = ( double * )malloc( ndim * ndim * sizeof( double ) ) ;
 	double *matB_check = ( double * )malloc( ndim * sizeof( double ) ) ;
 	double* x = ( double * )malloc( ndim * sizeof( double ) ) ;
-	 
+	struct STRUCT_ARGS str_args[NUM_THREADS] ;
+
 	// Iterate through the rows of the Matrix A 
 	for ( int i = 0 ; i < ndim ; i++ )
 	{
@@ -108,7 +108,7 @@ int main( int argc, char *argv[] )
 		{
 			srand48( clock() ) ; // Set random seed to for initializing drand48() later
 			// Store same random numbers in A 
-			*( matA + i * ndim + j ) = drand48() ;		
+			*( matA + i * ndim + j ) = drand48()  ;		
 			// scanf( "%d" , &num )	;
 			// *( matA + i * ndim + j ) = num ;	
 			*( matA_check + i * ndim + j ) = *( matA + i * ndim + j ) ;
@@ -162,7 +162,6 @@ int main( int argc, char *argv[] )
 			*( matB + j ) -= p * ( *( matB + i ) ) ;
 		}
 	}
-	
 /*
 ##########################################################
 _____________________BackSubstitution_____________________
@@ -174,10 +173,14 @@ _____________________BackSubstitution_____________________
 		if ( * (matA + i * ndim + i) == 0 )
 		{
 			printf( "No Solution Exists" ) ;
-			exit( -1 ) ;
+			*( x + i ) = 0.0 ;
 		}
 
-		*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
+		else 
+		{
+			*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
+		}
+		
 		printf ( "Answer: %lf \n" , *( x + i ) ) ; 
 		pthread_t tids[ NUM_THREADS ];
 		for (int id = 0; id < NUM_THREADS; id++) 
