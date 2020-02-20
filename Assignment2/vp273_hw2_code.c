@@ -25,8 +25,10 @@ double *matA ;
 double *matB ;
 int ndim ;
 int veclen ; 
-int i , j , thr_id;
-float p ;
+int i ; 
+// int j ; 
+int thr_id ;
+double x ;
 }  ;
 
 
@@ -39,15 +41,26 @@ void* gaussian_elimination ( void* arg )
 	double *matB = str_args -> matB ;
 	int veclen = str_args -> veclen ;
 	int i = str_args -> i ;
-	int j = str_args -> j ;
+	// int j = str_args -> j ;
+	double p = 0.0 ;
 	long thr_id = str_args -> thr_id ;
 
-	for ( int k = i + veclen * thr_id ; k < i + veclen  * ( thr_id + 1 ) && k < ndim ; k++ )
-	{
-		// printf("%lf , %lf , i=%d , j=%d , k=%d , tid=%ld\n" , *( matA + j * ndim + k ) , *( matA + i * ndim + k ) , 
-		// i , j , k ,thr_id );
-		*( matA + j * ndim + k ) -= str_args -> p * ( *( matA + i * ndim + k ) ) ;
-	}
+	for ( int j = i + 1 + thr_id * veclen ; j < i + 1 + ( thr_id + 1 ) * veclen && j < ndim ; j++ )
+		{
+			if ( * ( matA + i * ndim + i ) == 0 )
+			{
+				break ;
+			}
+			p = * ( matA + j * ndim + i ) / * ( matA + i * ndim + i ) ;
+
+		for ( int k = i ; k < ndim ; k++ )
+			{
+				// printf("%lf , %lf , i=%d , j=%d , k=%d , tid=%ld\n" , *( matA + j * ndim + k ) , *( matA + i * ndim + k ) , 
+				// i , j , k ,thr_id );
+				*( matA + j * ndim + k ) -= p * ( *( matA + i * ndim + k ) ) ;
+			}
+		*( matB + j ) -= p * ( *( matB + i ) ) ;
+		}
 	pthread_exit( (void * ) (long)thr_id  );
 }
 
@@ -62,7 +75,7 @@ void* back_substitution ( void* arg)
 	int i = str_args -> i ;
 	int start = str_args -> thr_id * veclen ;
 	int thr_id = str_args -> thr_id ;
-	double x = str_args -> p;
+	double x = str_args -> x;
 	for ( int k = thr_id * veclen ; k < ( thr_id + 1 ) * veclen && k <= i ; k++ )
 	{
 		*( matB + k ) -= x * ( *( matA + k * ndim + i ) ) ; 
@@ -126,41 +139,32 @@ int main( int argc, char *argv[] )
 
 	for ( int i = 0 ; i < ndim - 1 ; i++ )
 	{
-		for ( int j = i + 1 ; j < ndim ; j++ )
+		pthread_t tids[ NUM_THREADS ];
+		for (int id = 0; id < NUM_THREADS; id++) 
 		{
-			if ( * ( matA + i * ndim + i ) == 0 )
-			{
-				break ;
-			}
-			p = * ( matA + j * ndim + i ) / * ( matA + i * ndim + i ) ;
-			pthread_t tids[ NUM_THREADS ];
-			for (int id = 0; id < NUM_THREADS; id++) 
-			{
-				pthread_attr_t attr;	
-				pthread_attr_init(&attr);
-				pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);	
-				str_args[id] . matA = matA ;
-				str_args[id] . matB = matB ;
-				str_args[id] . thr_id = ( long ) id ;
-				str_args[id] . i = i ;
-				str_args[id] . j = j ;
-				str_args[id] . p = p ;
-				str_args[id] . ndim = ndim ;
-				str_args[id] . veclen = (int)ceil( (float)ndim / NUM_THREADS ) ;
-				pthread_create( &tids[id] , &attr , gaussian_elimination , ( void* ) &str_args[id] );
-			}
-
-			for (int id = 0; id < NUM_THREADS; id++) 
-			{
-				rc = pthread_join(tids[id], &status);
-				if (rc) 
-				{
-					printf("ERROR; return code from pthread_join() is %d and id is %d \n", rc , id);
-					exit(-1);
-				}
-			}
-			*( matB + j ) -= p * ( *( matB + i ) ) ;
+			pthread_attr_t attr;	
+			pthread_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);	
+			str_args[id] . matA = matA ;
+			str_args[id] . matB = matB ;
+			str_args[id] . thr_id = ( long ) id ;
+			str_args[id] . i = i ;
+			// str_args[id] . j = j ;
+			// str_args[id] . p = p ;
+			str_args[id] . ndim = ndim ;
+			str_args[id] . veclen = (int)ceil( (float)( ndim - 1 )/ NUM_THREADS ) ;
+			pthread_create( &tids[id] , &attr , gaussian_elimination , ( void* ) &str_args[id] );
 		}
+
+		for (int id = 0; id < NUM_THREADS; id++) 
+		{
+			rc = pthread_join(tids[id], &status);
+			if (rc) 
+			{
+				printf("ERROR; return code from pthread_join() is %d and id is %d \n", rc , id);
+				exit(-1);
+			}
+		}	
 	}
 /*
 ##########################################################
@@ -192,7 +196,7 @@ _____________________BackSubstitution_____________________
 			str_args[id] . matB = matB ;
 			str_args[id] . thr_id = ( long ) id ;
 			str_args[id] . i = i ;
-			str_args[id] . p = *( x + i ) ;
+			str_args[id] . x = *( x + i ) ;
 			str_args[id] . ndim = ndim ;
 			str_args[id] . veclen = (int)ceil( (float)ndim / NUM_THREADS ) ;
 			pthread_create( &tids[id] , &attr , back_substitution , ( void* ) &str_args[id] );
@@ -213,13 +217,13 @@ _____________________BackSubstitution_____________________
 	diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
 	printf( "elapsed time = %llu nanoseconds\n", ( long long unsigned int ) diff );
 
-	for (int i = 0; i < ndim; i++)
-	{
-		for (int j = 0; j < ndim; j++)
-		{
-			printf("MatA %lf\n" , *( matA + i * ndim + j )) ;
-		}
-	}
+	// for (int i = 0; i < ndim; i++)
+	// {
+	// 	for (int j = 0; j < ndim; j++)
+	// 	{
+	// 		printf("MatA %lf\n" , *( matA + i * ndim + j )) ;
+	// 	}
+	// }
 	
 
 	printf ( "___________Numerical Verification___________\n" ) ;
