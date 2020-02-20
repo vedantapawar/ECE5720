@@ -172,12 +172,24 @@ _____________________BackSubstitution_____________________
 	{
 		if ( * (matA + i * ndim + i) == 0 )
 		{
+<<<<<<< HEAD
+			// printf( "No Solution Exists" ) ;
+=======
+			printf( "No Solution Exists" ) ;
+>>>>>>> 72c099dd6137b913e1c3e6cd54f3ae0ce4fc9af5
 			*( x + i ) = 0.0 ;
+		}
+
+		else 
 		{
 			*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
 		}
 		
+<<<<<<< HEAD
+		// printf ( "Answer: %lf \n" , *( x + i ) ) ; 
+=======
 		printf ( "Answer: %lf \n" , *( x + i ) ) ; 
+>>>>>>> 72c099dd6137b913e1c3e6cd54f3ae0ce4fc9af5
 		pthread_t tids[ NUM_THREADS ];
 		for (int id = 0; id < NUM_THREADS; id++) 
 		{
@@ -209,6 +221,15 @@ _____________________BackSubstitution_____________________
 	diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
 	printf( "elapsed time = %llu nanoseconds\n", ( long long unsigned int ) diff );
 
+<<<<<<< HEAD
+	// for (int i = 0; i < ndim; i++)
+	// {
+	// 	for (int j = 0; j < ndim; j++)
+	// 	{
+	// 		printf("MatA %lf\n" , *( matA + i * ndim + j )) ;
+	// 	}
+	// }
+=======
 	for (int i = 0; i < ndim; i++)
 	{
 		for (int j = 0; j < ndim; j++)
@@ -216,6 +237,7 @@ _____________________BackSubstitution_____________________
 			printf("MatA %lf\n" , *( matA + i * ndim + j )) ;
 		}
 	}
+>>>>>>> 72c099dd6137b913e1c3e6cd54f3ae0ce4fc9af5
 	
 
 	printf ( "___________Numerical Verification___________\n" ) ;

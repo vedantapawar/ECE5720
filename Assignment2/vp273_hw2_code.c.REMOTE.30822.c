@@ -172,7 +172,11 @@ _____________________BackSubstitution_____________________
 	{
 		if ( * (matA + i * ndim + i) == 0 )
 		{
+			printf( "No Solution Exists" ) ;
 			*( x + i ) = 0.0 ;
+		}
+
+		else 
 		{
 			*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
 		}
