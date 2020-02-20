@@ -58,25 +58,32 @@ int main( int argc, char *argv[] )
 	double *matA_check = ( double * )malloc( ndim * ndim * sizeof( double ) ) ;
 	double *matB_check = ( double * )malloc( ndim * sizeof( double ) ) ;
 	double* x = ( double * )malloc( ndim * sizeof( double ) ) ;
+
 	// Iterate through the rows of the Matrix A 
+	clock_gettime( CLOCK_MONOTONIC , &start );
 	for ( int i = 0 ; i < ndim ; i++ )
 	{
 		// Iterate through the columns of the Matrix A 
 		for ( int j = 0 ; j < ndim ; j++ )
 		{
-			srand48( clock() ) ; // Set random seed to for initializing drand48() later
+			clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
+			//Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
+			diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
+			srand48( diff ) ; // Set random seed to for initializing drand48() later
 			// Store same random numbers in A 
 			*( matA + i * ndim + j ) = drand48() ;		
 			// scanf( "%d" , &num )	;
 			// *( matA + i * ndim + j ) = num ;	
 			*( matA_check + i * ndim + j ) = *( matA + i * ndim + j ) ;
-	
 		}
-		srand48 ( clock() ) ;
-		*( matB + i ) = drand48() ;	
+			clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
+			//Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
+			diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
+			srand48( diff ) ; // Set random seed to for initializing drand48() later		*( matB + i ) = drand48() ;	
 		// scanf( "%d" , &num )	;
-		// *( matB + i ) = num ;	
-		* ( matB_check + i ) = *( matB + i ) = num ;
+		// *( matB + i ) = num ;
+		*( matB + i ) = drand48() ;	
+		* ( matB_check + i ) = *( matB + i ) ;
 	}
 	
 	// Start high resolution clock timer
@@ -96,18 +103,19 @@ int main( int argc, char *argv[] )
 				*( matA + j * ndim + k ) -= p * ( *( matA + i * ndim + k ) ) ;
 			}
 			*( matB + j ) -= p * ( *( matB + i ) ) ;
+			// printf("p %lf \n" , p);
 		}
 	}
 
 	for ( int i = ndim - 1 ; i >= 0 ; i-- )
 	{
-		if ( * (matA + i * ndim + i) == 0 )
-		{
-			printf( "No Solution Exists");
-			break ;
-		}
+		// if ( * (matA + i * ndim + i) == 0 )
+		// {
+		// 	printf( "No Solution Exists");
+		// 	break ;
+		// }
 		*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
-		// printf ( "Answer: %f \n" , x ) ; 
+		printf ( "Answer: %f \n" , *( x + i ) ) ; 
 		for ( int k = 0 ; k <= i ; k++ )
 		{
 			*( matB + k ) -= *( x + i ) * ( *( matA + k * ndim + i ) ) ; 
