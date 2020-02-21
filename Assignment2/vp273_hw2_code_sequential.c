@@ -44,8 +44,9 @@ int main( int argc, char *argv[] )
 	int num ;
 	double p;
 	double rho = 0.0 ;
-	printf( "Enter the dimension of the matrix:\n" );
-	scanf("%d" , &ndim); 	// Store matrix dimension in ndim 	
+	// printf( "Enter the dimension of the matrix:\n" );
+	// scanf("%d" , &ndim); 	// Store matrix dimension in ndim 	
+	ndim = atoi ( argv[ 1 ] ) ;
 
 	/*
 	Create matrix on heap by malloc and storing and assigning pointers to
@@ -115,7 +116,7 @@ int main( int argc, char *argv[] )
 		// 	break ;
 		// }
 		*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
-		printf ( "Answer: %f \n" , *( x + i ) ) ; 
+		// printf ( "Answer: %f \n" , *( x + i ) ) ; 
 		for ( int k = 0 ; k <= i ; k++ )
 		{
 			*( matB + k ) -= *( x + i ) * ( *( matA + k * ndim + i ) ) ; 

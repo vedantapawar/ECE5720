@@ -6,9 +6,8 @@ Email: vp273@cornell.edu
 
 Instructions for Compiling and Executing Code:
 Compile: gcc vp273_hw2_code.c -o vp273_hw2_code -std=gnu99 -pthread -lm
-Run: ./vp273_hw2_code
-    Enter the dimension of the matrix:
-    Enter the number of threads:
+Run: ./vp273_hw2_code "Enter the dimension of the matrix:" "Enter the number of threads:"
+Example: ./vp273_hw2_code 4096 8
 */
 
 #include <stdio.h> 	 /* For printf()  */
@@ -105,10 +104,12 @@ int main( int argc, char *argv[] )
 	double sum = 0.0 ;			/* Checking the sum of Gaussian elimination */
 	double rho = 0.0 ;			/* Finding the inner product of the error residuals  */
 
-	printf( "Enter the dimension of the matrix:\n" );
-	scanf("%d" , &ndim); 	// Store matrix dimension in ndim 
-	printf( "Enter the number of threads:\n" );
-	scanf("%d" , &NUM_THREADS); 	// Store matrix dimension in ndim 	
+	/* "Enter the dimension of the matrix: */
+	ndim = atoi ( argv[ 1 ] ) ;
+	/* "Enter the number of threads: */
+	NUM_THREADS = atoi ( argv[ 2 ] ) ;
+
+	printf ("The dimension is %d and No. of Threads are: %d \n" , ndim , NUM_THREADS );
 
 	/*
 	Create matrix on heap by malloc and storing and assigning pointers to
