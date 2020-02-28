@@ -5,7 +5,7 @@ Class: M.Eng ECE, Cornell University
 Email: vp273@cornell.edu
 
 Instructions for Compiling and Executing Code:
-Compile: gcc vp273_mat.c -std=gnu99 -o vp273_mat
+Compile: gcc vp273_mat.c -std=gnu99 -O3 -o vp273_mat
 Run: ./vp273_mat
 */
 
@@ -47,7 +47,7 @@ int main( int argc, char *argv[] )
     	for ( int s = 1 ; s <= n / 2 ; s = 2 * s )
     	{
             // Start high resolution clock timer
-    		clock_gettime( CLOCK_MONOTONIC , &start );
+    		clock_gettime( CLOCK_PROCESS_CPUTIME_ID , &start );
             //Repeat the array access REPEAT x Stride times
     		for ( int j = 0 ; j < REPEAT * s ; j++ )
     		{
@@ -57,7 +57,7 @@ int main( int argc, char *argv[] )
 	    			A[ i * s ] = 3.142857 ; // Touch the array element by storing pi
 	    		}
     		}            
-    		clock_gettime( CLOCK_MONOTONIC , &end );    // End clock timer.
+    		clock_gettime( CLOCK_PROCESS_CPUTIME_ID , &end );    // End clock timer.
             //Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
     		diff = ( BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec ) ;
             // Calculate average time for a single access by dividing by n x REPEAT
