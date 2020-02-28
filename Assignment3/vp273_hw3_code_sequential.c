@@ -16,25 +16,39 @@ Run: ./vp273_hw2_code
 
 #define BILLION 1000000000L	  // To convert clock time in floating point seconds to nanoseconds/
 
-/*
-void find_max ( double *matA , int i , int ndim ) 
+
+void find_max ( double **matA , int i , int ndim , double *matB) 
 {
 	int i_max = i + 1 ; // For storing max i
-	double max = *( matA + i * ndim + i ) ;
+	double max = matA [ i + 1 ][ i ] ;
 	for ( int j = i + 1 ; j < ndim ; j++ )
 	{
-		if ( max < *( matA + j * ndim + i ) )
+		if ( max < matA[ j ][ i ] )
 		{
-			max = *( matA + j * ndim + i ) ;
-			i_max = j ;
+			max = matA[ j ][ i ] ;
+			i_max = j ;	
 		}
 	}
 	double *temp ;
-	temp = matA + i * ndim ;
-	matA + i * ndim = matA + i_max ;
+	temp = matA [ i + 1 ] ;
+	matA [ i + 1 ] = matA [ i_max ] ;
+	matA [ i_max ] = temp ;
+	double temp_num;
+	temp_num = *(matB + i + 1) ;
+	*(matB + i + 1) = *(matB + i_max) ;
+	*(matB + i_max) = temp_num ;
+}
 
-}*/
-
+void print ( double **matA , int ndim )
+{
+	for(int i = 0 ; i < ndim ; 	i++)
+	{
+		for(int j = 0 ; j < ndim ; j++)
+		{
+			printf("%lf\n" , matA[ i ][ j ]);
+		}
+	}
+}
 int main( int argc, char *argv[] )
 {
 	uint64_t diff; 				// Stores the time in nanoseconds
@@ -54,9 +68,15 @@ int main( int argc, char *argv[] )
 	The matrix is a linear array of size ndim x ndim
 	Total memory malloced is ndim^2
 	 */
-	double *matA = ( double * )malloc( ndim * ndim * sizeof( double ) ) ;
+
+	double *matA [ ndim ] ;
+	double *matA_check [ ndim ] ;
+	for ( int i = 0 ; i < ndim ; i++ )
+	{
+		matA [ i ] = (double *)malloc( ndim * sizeof(double) );
+		matA_check [ i ] = (double *)malloc( ndim * sizeof(double) );
+	}
 	double *matB = ( double * )malloc( ndim * sizeof( double ) ) ;
-	double *matA_check = ( double * )malloc( ndim * ndim * sizeof( double ) ) ;
 	double *matB_check = ( double * )malloc( ndim * sizeof( double ) ) ;
 	double* x = ( double * )malloc( ndim * sizeof( double ) ) ;
 
@@ -72,10 +92,10 @@ int main( int argc, char *argv[] )
 			diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
 			srand48( diff ) ; // Set random seed to for initializing drand48() later
 			// Store same random numbers in A 
-			*( matA + i * ndim + j ) = drand48() ;		
+			matA[ i ][ j ] = drand48() ;		
 			// scanf( "%d" , &num )	;
-			// *( matA + i * ndim + j ) = num ;	
-			*( matA_check + i * ndim + j ) = *( matA + i * ndim + j ) ;
+			// matA[ i ][ j ] = num ;	
+			matA_check[ i ][ j ] = matA[ i ][ j ] ;
 		}
 			clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
 			//Calculate the difference in timer and convert it to nanosecond by multiplying by 10^9
@@ -91,23 +111,26 @@ int main( int argc, char *argv[] )
 	clock_gettime( CLOCK_MONOTONIC , &start );
 	for ( int i = 0 ; i < ndim - 1 ; i++ )
 	{
-		// find_max ( matA , i , ndim ) ;
+		// printf("Iteration\n");
+		find_max ( matA , i , ndim , matB) ;
+		// print ( matA , ndim ) ;
 		for ( int j = i + 1 ; j < ndim ; j++ )
 		{
-			if ( * ( matA + i * ndim + i ) == 0 )
+			if ( matA[ i ][ i ] == 0 )
 			{
 				break ;
 			}
-			p = * ( matA + j * ndim + i ) / * ( matA + i * ndim + i ) ;
+			p = matA[ j ][ i ] / matA[ i ][ i ] ;
 			for ( int k = i ; k < ndim ; k++ )
 			{
-				*( matA + j * ndim + k ) -= p * ( *( matA + i * ndim + k ) ) ;
+				matA[ j ][ k ] -= p * ( matA[ i ][ k ] ) ;
 			}
 			*( matB + j ) -= p * ( *( matB + i ) ) ;
 			// printf("p %lf \n" , p);
 		}
 	}
-
+	// printf("Triangle\n");
+	// print(matA , ndim) ;
 	for ( int i = ndim - 1 ; i >= 0 ; i-- )
 	{
 		// if ( * (matA + i * ndim + i) == 0 )
@@ -115,11 +138,11 @@ int main( int argc, char *argv[] )
 		// 	printf( "No Solution Exists");
 		// 	break ;
 		// }
-		*( x + i ) = *( matB + i ) / * (matA + i * ndim + i) ;
+		*( x + i ) = *( matB + i ) / matA[ i ][ i ] ;
 		// printf ( "Answer: %f \n" , *( x + i ) ) ; 
 		for ( int k = 0 ; k <= i ; k++ )
 		{
-			*( matB + k ) -= *( x + i ) * ( *( matA + k * ndim + i ) ) ; 
+			*( matB + k ) -= *( x + i ) * ( matA[ k ][ i ] ) ; 
 		}
 	} 
 
@@ -139,7 +162,7 @@ int main( int argc, char *argv[] )
 		sum = 0.0 ;
 		for ( int j = 0 ; j < ndim ; j++ )
 		{
-			sum += *( matA_check + i * ndim + j ) * ( *( x + j ) ) ;
+			sum += matA_check[ i ][ j ] * ( *( x + j ) ) ;
 			// printf("%lf , %lf \n" , *( matA_check + i * ndim + j ) , ( *( x + j )) );
 		}
 		// printf("%lf 	, %lf \n" , sum , *(matB_check + i ) );
@@ -151,9 +174,14 @@ int main( int argc, char *argv[] )
 
 
 	//Deallocate the memory allocated to matrices A, B and C
-	free ( matA ) ;
+	for ( int i = 0 ; i < ndim ; i++ ) 
+	{ 
+		free(matA[ i ]);
+		free(matA_check[ i ]);
+	}
+	// free ( matA ) ;
 	free ( matB ) ;
-	free ( matA_check ) ;
+	// free ( matA_check ) ;
 	free ( matB_check ) ;
 	free ( x ) ;
 	exit( 0 ) ;
