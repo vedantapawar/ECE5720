@@ -205,7 +205,7 @@ int main( int argc, char *argv[] )
 		free( I[ i ] ) ;
 		free( I_check[ i ] ) ;
 		free( x[i] ) ;
-		free( matAx[ i ] )
+		free( matAx[ i ] ) ;
 	}
 	exit( 0 ) ;
 }
