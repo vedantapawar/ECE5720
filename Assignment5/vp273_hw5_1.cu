@@ -16,7 +16,7 @@ Run: ./vp273_mm_rbyc
 
 #define BILLION 1000000000L	  // To convert clock time in floating point seconds to nanoseconds/
 
-__global__ void matrixMul( double* dev_matA , double* dev_matB , double* dev_matC , int ndim )
+__global__ void matrixMul( double** dev_matA , double** dev_matB , double** dev_matC , int ndim )
 {
 	double partial = 0.0;
 	int i = blockIdx.y * blockDim.y + threadIdx.y; // Row i of C
@@ -25,9 +25,9 @@ __global__ void matrixMul( double* dev_matA , double* dev_matB , double* dev_mat
 	{
 		for ( int k = 0 ; k < ndim ; k++ )
 		{	
-			partial += dev_matA[i * ndim + k] * dev_matB[k * ndim + j];
+			partial += dev_matA[i][k] * dev_matB[k][j];
 		}
-		dev_matC[i * ndim + j] = partial;
+		dev_matC[i][j] = partial;
 	}
 	
 }
@@ -45,34 +45,49 @@ int main( int argc, char *argv[] )
 	Each matrix is a linear array of size ndim x ndim
 	Total memory malloced is 3 x ndim^2
 	 */
-	double *matA = ( double * )malloc( ndim * ndim * sizeof( double ) );
-	double *matB = ( double * )malloc( ndim * ndim * sizeof( double ) );
-	double *matC = ( double * )malloc( ndim * ndim * sizeof( double ) );
-	double *dev_matA , *dev_matB , *dev_matC;
+	double *matA[ndim] ;
+	double *matB[ndim] ;
+	double *matC[ndim] ;
+	for ( int i = 0 ; i < ndim ; i ++ )
+	{
+		matA[i] = ( double * )malloc( ndim * sizeof( double ) );
+		matB[i] = ( double * )malloc( ndim * sizeof( double ) );
+		matC[i] = ( double * )malloc( ndim * sizeof( double ) );
+	}
 
-	srand48 (1); 	// Set random seed to for initializing drand48() later
-
+	clock_gettime( CLOCK_MONOTONIC , &start );
 	// Iterate through the rows of the Matrix A and B
 	for ( int i = 0 ; i < ndim ; i++ )
 	{
 		// Iterate through the columns of the Matrix A and B
 		for ( int j = 0 ; j < ndim ; j++ )
 		{
+			clock_gettime( CLOCK_MONOTONIC , &end );	// End clock timer.
+			diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
+			srand48( diff ) ; // Set random seed to for initializing drand48() later
 			// Store same random numbers in A and B
-			*( matA + i * ndim + j ) = drand48() ;
-			*( matB + i * ndim + j ) = drand48() ;
+			matA[i][j] = drand48() ;
+			matB[i][j] = drand48() ;
 		}
 	}
 
-	cudaMalloc( ( void** )&dev_matA, ndim * ndim * sizeof( double ) );
-	cudaMalloc( ( void** )&dev_matB, ndim * ndim * sizeof( double ) );
-	cudaMalloc( ( void** )&dev_matC, ndim * ndim * sizeof( double ) );
+	double *dev_matA[ndim] , *dev_matB[ndim] , *dev_matC[ndim];
+	for ( int i = 0 ; i < ndim ; i++ )
+	{
+		cudaMalloc( ( void** )&dev_matA[i], ndim * sizeof( double ) );
+		cudaMalloc( ( void** )&dev_matB[i], ndim * sizeof( double ) );
+		cudaMalloc( ( void** )&dev_matC[i], ndim * sizeof( double ) );
+	}	
 
 	// Start high resolution clock timer
 	clock_gettime( CLOCK_MONOTONIC , &start );
-
-	cudaMemcpy( dev_matA , matA , ndim * ndim * sizeof( double ) , cudaMemcpyHostToDevice );
-	cudaMemcpy( dev_matB , matB , ndim * ndim * sizeof( double ) , cudaMemcpyHostToDevice );
+	
+	for ( int i = 0 ; i < ndim ; i++ )
+	{
+		cudaMemcpy( dev_matA[i] , matA[i] , ndim * sizeof( double ) , cudaMemcpyHostToDevice );
+		cudaMemcpy( dev_matB[i] , matB[i] , ndim * sizeof( double ) , cudaMemcpyHostToDevice );
+	}
+	
 
 	block_size = atoi( argv[2] ) ;
 	dim3 Block( block_size , block_size) ;
@@ -92,11 +107,16 @@ int main( int argc, char *argv[] )
 	fprintf( ptr_file ,"%d , %llu\n", ndim ,   ( long long unsigned int ) diff );
 
 	//Deallocate the memory allocated to matrices A, B and C
-	free ( matA ) ;
-	free ( matB ) ;
-	free ( matC ) ;
+	for ( int i = 0 ; i < ndim ; i++ ) 
+	{ 
+		free ( matA[i] ) ;
+		free ( matB[i] ) ;
+		free ( matC[i] ) ;
+		
+	}
 	cudaFree( dev_matA ) ;
 	cudaFree( dev_matB ) ;
 	cudaFree( dev_matC ) ;
+	
 	exit( 0 ) ;
 }
