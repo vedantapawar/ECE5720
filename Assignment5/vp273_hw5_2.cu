@@ -16,14 +16,14 @@ Run: ./vp273_mm_rbyc
 
 #define BILLION 1000000000L	  // To convert clock time in floating point seconds to nanoseconds/
 
-__global__ void matrixMul( double** dev_matA , double** dev_matB , double** dev_matC , int ndim  )
+__global__ void matrixMul( double** dev_matA , double** dev_matB , double** dev_matC , int ndim , int tile_size )
 {
-	// extern __shared__ double A_tile[];
-	// double *A_tile_local = ( double* ) A_tile ;
-	// extern __shared__ double B_tile[];
-	// double *B_tile_local = ( double* ) A_tile ;
-	__shared__ double A_tile[16][16];
-	__shared__ double B_tile[16][16];
+	extern __shared__ double A_B_shared[];
+	double *A_tile = &A_B_shared[ 0 ] ;
+	double *B_tile = &A_B_shared[ tile_size * tile_size * sizeof( double ) ] ;
+
+	// __shared__ double A_tile[16][16];
+	// __shared__ double B_tile[16][16];
 	double partial = 0.0;
 	int bx = blockIdx.x; int by = blockIdx.y;
 	int tx = threadIdx.x; int ty = threadIdx.y;
@@ -32,12 +32,12 @@ __global__ void matrixMul( double** dev_matA , double** dev_matB , double** dev_
 	/* transpose B while loading to shared memory */
 	for (int m = 0; m < ndim / blockDim.x ; ++m) 
 	{
-		A_tile[ ty ][ tx ] = dev_matA[row][m*blockDim.x + tx]; /* load coalesced */
-		B_tile[ ty ][ tx ] = dev_matB[( m * blockDim.y + ty )][col]; /* not load coalesced */
+		A_tile[ ty * tile_size + tx ] = dev_matA[row][m*blockDim.x + tx]; /* load coalesced */
+		B_tile[ ty * tile_size + tx ] = dev_matB[( m * blockDim.y + ty )][col]; /* not load coalesced */
 		__syncthreads();
 		for (int k = 0; k < blockDim.x; ++k)
 		{
-			partial += A_tile[ ty ][ k ] * B_tile[ k ][ tx ]; /*Bank conflicts */
+			partial += A_tile[ ty *tile_size + k ] * B_tile[ k *tile_size + tx ]; /*Bank conflicts */
 		}
 		__syncthreads();
 		dev_matC[row][col] = partial; 
@@ -115,9 +115,10 @@ int main( int argc, char *argv[] )
 	
 
 	block_size = atoi( argv[2] ) ;
+	int shared_mem_size =  2 * block_size * block_size * sizeof( double ) ;
 	dim3 Block( block_size , block_size) ;
 	dim3 Grid( ndim / Block.x , ndim / Block.y) ;
-	matrixMul<<< Grid, Block>>>( dev_matA , dev_matB , dev_matC , ndim );
+	matrixMul<<< Grid, Block , shared_mem_size >>>( dev_matA , dev_matB , dev_matC , ndim , block_size );
 	cudaMemcpy( matC , dev_matC , ndim * ndim * sizeof( double ) , cudaMemcpyDeviceToHost );	
 
 	cudaDeviceSynchronize( );
