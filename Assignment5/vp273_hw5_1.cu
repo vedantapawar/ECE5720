@@ -5,8 +5,9 @@ Class: M.Eng ECE, Cornell University
 Email: vp273@cornell.edu
 
 Instructions for Compiling and Executing Code:
-Compile: gcc vp273_mm_rbyc.c -std=gnu99 -o vp273_mm_rbyc
-Run: ./vp273_mm_rbyc
+Compile: /usr/local/cuda-10.1/bin/nvcc -o vp273_hw5_1.out vp273_hw5_1.cu
+Run: ./vp273_hw5_1.out "Enter the dimension of the matrix:" "Enter the Block Size:"
+Example: ./vp273_hw5_1.out 4096 8
 */
 
 #include <stdio.h> 	// For printf() 
@@ -102,9 +103,9 @@ int main( int argc, char *argv[] )
 	diff = BILLION * ( end.tv_sec - start.tv_sec ) + end.tv_nsec - start.tv_nsec;
 	printf( "elapsed time = %llu nanoseconds\n", ( long long unsigned int ) diff );
 
-	ptr_file = fopen("output_hw5_1.csv", "a");  // Save the time and corresponding stride in a csv file
+	ptr_file = fopen("output_hw5_1.csv", "a");  // Save the time and corresponding matrix dim. in a csv file
 	// Store the time and corresponding matrix dimension in a csv file
-	fprintf( ptr_file ,"%d , %llu\n", ndim ,   ( long long unsigned int ) diff );
+	fprintf( ptr_file ,"%d , %d , %llu\n", ndim , block_size ,  ( long long unsigned int ) diff );
 
 	//Deallocate the memory allocated to matrices A, B and C
 	for ( int i = 0 ; i < ndim ; i++ ) 
